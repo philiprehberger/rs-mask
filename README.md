@@ -10,7 +10,7 @@ Data masking and redaction for strings, emails, and sensitive data.
 
 ```toml
 [dependencies]
-philiprehberger-mask = "0.1.6"
+philiprehberger-mask = "0.1.7"
 ```
 
 ## Usage
@@ -47,6 +47,14 @@ assert_eq!(secret.reveal(), "my-api-key-123");
 | `mask_between(s, start, end)` | Mask content between markers |
 | `MaskedString::new(s)` | Create a masked wrapper |
 | `.reveal()` | Get the real value |
+
+
+## Development
+
+```bash
+cargo test
+cargo clippy -- -D warnings
+```
 
 ## License
 
