@@ -10,7 +10,7 @@ Data masking and redaction for strings, emails, and sensitive data
 
 ```toml
 [dependencies]
-philiprehberger-mask = "0.1.7"
+philiprehberger-mask = "0.2.0"
 ```
 
 ## Usage
@@ -32,6 +32,17 @@ let secret = MaskedString::new("my-api-key-123");
 println!("{}", secret);       // prints "**************"
 println!("{:?}", secret);     // prints MaskedString("**************")
 assert_eq!(secret.reveal(), "my-api-key-123");
+
+// SSN masking
+use philiprehberger_mask::mask_ssn;
+assert_eq!(mask_ssn("123-45-6789"), "***-**-6789");
+
+// IBAN masking
+use philiprehberger_mask::mask_iban;
+assert_eq!(mask_iban("GB29NWBK60161331926819"), "GB****************6819");
+
+// From trait
+let secret = MaskedString::from("api-key");
 ```
 
 ## API
@@ -47,6 +58,10 @@ assert_eq!(secret.reveal(), "my-api-key-123");
 | `mask_between(s, start, end)` | Mask content between markers |
 | `MaskedString::new(s)` | Create a masked wrapper |
 | `.reveal()` | Get the real value |
+| `mask_ssn(s)` | Mask SSN keeping last 4 digits |
+| `mask_iban(s)` | Mask IBAN keeping country code + last 4 |
+| `MaskedString::default()` | Create empty masked string |
+| `MaskedString::from(s)` | Create from &str or String |
 
 
 ## Development

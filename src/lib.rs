@@ -29,6 +29,7 @@ use std::hash::{Hash, Hasher};
 /// assert_eq!(mask_string("hello"), "*****");
 /// assert_eq!(mask_string(""), "");
 /// ```
+#[must_use]
 pub fn mask_string(s: &str) -> String {
     s.chars().map(|_| '*').collect()
 }
@@ -44,6 +45,7 @@ pub fn mask_string(s: &str) -> String {
 /// use philiprehberger_mask::mask_partial;
 /// assert_eq!(mask_partial("12345678", 4), "****5678");
 /// ```
+#[must_use]
 pub fn mask_partial(s: &str, show_last: usize) -> String {
     let chars: Vec<char> = s.chars().collect();
     let len = chars.len();
@@ -75,6 +77,7 @@ pub fn mask_partial(s: &str, show_last: usize) -> String {
 /// assert_eq!(mask_email("john.doe@example.com"), "j*******@example.com");
 /// assert_eq!(mask_email("noatsign"), "********");
 /// ```
+#[must_use]
 pub fn mask_email(s: &str) -> String {
     match s.find('@') {
         Some(at_pos) => {
@@ -104,6 +107,7 @@ pub fn mask_email(s: &str) -> String {
 /// assert_eq!(mask_credit_card("4111-1111-1111-1111"), "****-****-****-1111");
 /// assert_eq!(mask_credit_card("4111 1111 1111 1111"), "**** **** **** 1111");
 /// ```
+#[must_use]
 pub fn mask_credit_card(s: &str) -> String {
     let digit_count = s.chars().filter(|c| c.is_ascii_digit()).count();
     let show_last = 4usize;
@@ -136,6 +140,7 @@ pub fn mask_credit_card(s: &str) -> String {
 /// use philiprehberger_mask::mask_phone;
 /// assert_eq!(mask_phone("+1 (555) 123-4567"), "+* (***) ***-4567");
 /// ```
+#[must_use]
 pub fn mask_phone(s: &str) -> String {
     let digit_count = s.chars().filter(|c| c.is_ascii_digit()).count();
     let show_last = 4usize;
@@ -166,6 +171,7 @@ pub fn mask_phone(s: &str) -> String {
 /// use philiprehberger_mask::mask_digits;
 /// assert_eq!(mask_digits("order-12345"), "order-*****");
 /// ```
+#[must_use]
 pub fn mask_digits(s: &str) -> String {
     s.chars()
         .map(|ch| if ch.is_ascii_digit() { '*' } else { ch })
@@ -187,6 +193,7 @@ pub fn mask_digits(s: &str) -> String {
 ///     "token: [******] end"
 /// );
 /// ```
+#[must_use]
 pub fn mask_between(s: &str, start_marker: &str, end_marker: &str) -> String {
     let Some(start_pos) = s.find(start_marker) else {
         return s.to_string();
@@ -219,13 +226,14 @@ pub fn mask_between(s: &str, start_marker: &str, end_marker: &str) -> String {
 /// assert_eq!(format!("{:?}", secret), "MaskedString(\"**********\")");
 /// assert_eq!(secret.reveal(), "my-api-key");
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct MaskedString {
     value: String,
 }
 
 impl MaskedString {
     /// Create a new `MaskedString` wrapping the given value.
+    #[must_use]
     pub fn new(value: impl Into<String>) -> Self {
         Self {
             value: value.into(),
@@ -233,6 +241,7 @@ impl MaskedString {
     }
 
     /// Returns the actual (unmasked) value.
+    #[must_use]
     pub fn reveal(&self) -> &str {
         &self.value
     }
@@ -272,10 +281,86 @@ impl PartialEq for MaskedString {
 
 impl Eq for MaskedString {}
 
+
+impl From<&str> for MaskedString {
+    fn from(s: &str) -> Self {
+        Self::new(s)
+    }
+}
+
+impl From<String> for MaskedString {
+    fn from(s: String) -> Self {
+        Self::new(s)
+    }
+}
+
 impl Hash for MaskedString {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.value.hash(state);
     }
+}
+
+/// Mask a Social Security Number, keeping only the last 4 digits.
+///
+/// Handles both hyphenated (`123-45-6789` → `***-**-6789`) and plain formats.
+/// If the input has fewer than 4 characters, it is returned unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_mask::mask_ssn;
+/// assert_eq!(mask_ssn("123-45-6789"), "***-**-6789");
+/// assert_eq!(mask_ssn("123456789"), "*****6789");
+/// ```
+#[must_use]
+pub fn mask_ssn(s: &str) -> String {
+    let digit_count = s.chars().filter(|c| c.is_ascii_digit()).count();
+    if digit_count <= 4 {
+        return s.to_string();
+    }
+    let mask_count = digit_count - 4;
+    let mut digits_seen = 0usize;
+    s.chars()
+        .map(|ch| {
+            if ch.is_ascii_digit() {
+                digits_seen += 1;
+                if digits_seen <= mask_count {
+                    '*'
+                } else {
+                    ch
+                }
+            } else {
+                ch
+            }
+        })
+        .collect()
+}
+
+/// Mask an IBAN, keeping the country code (first 2 characters) and last 4 characters.
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_mask::mask_iban;
+/// assert_eq!(mask_iban("GB29NWBK60161331926819"), "GB****************6819");
+/// assert_eq!(mask_iban("DE89370400440532013000"), "DE****************3000");
+/// ```
+#[must_use]
+pub fn mask_iban(s: &str) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len();
+    if len <= 6 {
+        return s.to_string();
+    }
+    let mut result = String::with_capacity(len);
+    for (i, &ch) in chars.iter().enumerate() {
+        if i < 2 || i >= len - 4 {
+            result.push(ch);
+        } else {
+            result.push('*');
+        }
+    }
+    result
 }
 
 #[cfg(test)]
