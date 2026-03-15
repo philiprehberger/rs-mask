@@ -1,0 +1,10 @@
+[package]
+name = "philiprehberger-mask"
+version = "0.1.0"
+edition = "2021"
+authors = ["Philip Rehberger"]
+description = "Data masking and redaction for strings, emails, and sensitive data"
+license = "MIT"
+repository = "https://github.com/philiprehberger/rs-mask"
+keywords = ["mask", "redact", "pii", "security", "logging"]
+categories = ["text-processing", "value-formatting"]
