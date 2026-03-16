@@ -10,7 +10,7 @@ Data masking and redaction for strings, emails, and sensitive data.
 
 ```toml
 [dependencies]
-philiprehberger-mask = "0.1"
+philiprehberger-mask = "0.1.6"
 ```
 
 ## Usage
