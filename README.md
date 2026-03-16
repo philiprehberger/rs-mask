@@ -1,5 +1,9 @@
 # rs-mask
 
+[![CI](https://github.com/philiprehberger/rs-mask/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/rs-mask/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/philiprehberger-mask.svg)](https://crates.io/crates/philiprehberger-mask)
+[![License](https://img.shields.io/github/license/philiprehberger/rs-mask)](LICENSE)
+
 Data masking and redaction for strings, emails, and sensitive data.
 
 ## Installation
