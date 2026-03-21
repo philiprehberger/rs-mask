@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 (2026-03-21)
+
+- Add Default trait implementation for MaskedString
+- Add From<&str> and From<String> implementations for MaskedString
+- Add mask_ssn() function for Social Security Number masking
+- Add mask_iban() function for IBAN masking
+- Add #[must_use] attributes on all public functions and methods
+
 ## 0.1.7 (2026-03-17)
 
 - Add readme, rust-version, documentation to Cargo.toml
