@@ -363,6 +363,105 @@ pub fn mask_iban(s: &str) -> String {
     result
 }
 
+/// Mask a JWT token by replacing each of the three dot-separated segments with `***`.
+///
+/// Returns the input unchanged if it does not contain exactly two dots
+/// (i.e. it is not in `header.payload.signature` form).
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_mask::mask_jwt;
+/// assert_eq!(
+///     mask_jwt("eyJhbGciOi.eyJzdWIi.SflKxwRJ"),
+///     "***.***.***"
+/// );
+/// assert_eq!(mask_jwt("not-a-jwt"), "not-a-jwt");
+/// ```
+#[must_use]
+pub fn mask_jwt(s: &str) -> String {
+    let segments: Vec<&str> = s.split('.').collect();
+    if segments.len() != 3 {
+        return s.to_string();
+    }
+    "***.***.***".to_string()
+}
+
+/// Redact basic-auth credentials in a URL.
+///
+/// Replaces the `user:password@` (or `user@`) portion with `***:***@`
+/// (or `***@`). The scheme, host, port, and path are preserved.
+/// Returns the input unchanged when no `://...@` segment is found.
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_mask::mask_url_credentials;
+/// assert_eq!(
+///     mask_url_credentials("https://user:secret@example.com/path"),
+///     "https://***:***@example.com/path"
+/// );
+/// assert_eq!(
+///     mask_url_credentials("https://example.com"),
+///     "https://example.com"
+/// );
+/// ```
+#[must_use]
+pub fn mask_url_credentials(s: &str) -> String {
+    let Some(scheme_end) = s.find("://") else {
+        return s.to_string();
+    };
+    let after_scheme = scheme_end + 3;
+    // Authority section ends at the first '/', '?', or '#' — or end of string
+    let auth_end_rel = s[after_scheme..]
+        .find(|c: char| c == '/' || c == '?' || c == '#')
+        .unwrap_or(s.len() - after_scheme);
+    let authority = &s[after_scheme..after_scheme + auth_end_rel];
+    let Some(at_rel) = authority.rfind('@') else {
+        return s.to_string();
+    };
+    let creds = &authority[..at_rel];
+    let replacement = if creds.contains(':') {
+        "***:***".to_string()
+    } else {
+        "***".to_string()
+    };
+    let mut result = String::with_capacity(s.len());
+    result.push_str(&s[..after_scheme]);
+    result.push_str(&replacement);
+    result.push_str(&s[after_scheme + at_rel..]);
+    result
+}
+
+/// Keep the first `show_first` characters and mask the rest with `*`.
+///
+/// If `show_first` is greater than or equal to the string length, returns
+/// the original string unchanged.
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_mask::mask_partial_start;
+/// assert_eq!(mask_partial_start("sk_live_abcdef", 7), "sk_live*******");
+/// ```
+#[must_use]
+pub fn mask_partial_start(s: &str, show_first: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    let len = chars.len();
+    if show_first >= len {
+        return s.to_string();
+    }
+    let mut result = String::with_capacity(s.len());
+    for (i, &ch) in chars.iter().enumerate() {
+        if i < show_first {
+            result.push(ch);
+        } else {
+            result.push('*');
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -628,5 +727,102 @@ mod tests {
     fn test_masked_string_from_string() {
         let ms = MaskedString::new(String::from("owned"));
         assert_eq!(ms.reveal(), "owned");
+    }
+
+    // mask_jwt tests
+
+    #[test]
+    fn test_mask_jwt_basic() {
+        assert_eq!(
+            mask_jwt("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SflKxwRJSMeKKF2QT4"),
+            "***.***.***"
+        );
+    }
+
+    #[test]
+    fn test_mask_jwt_not_three_segments() {
+        assert_eq!(mask_jwt("only.two"), "only.two");
+        assert_eq!(mask_jwt("just-one"), "just-one");
+        assert_eq!(mask_jwt("a.b.c.d"), "a.b.c.d");
+    }
+
+    #[test]
+    fn test_mask_jwt_empty_segments() {
+        // Three dots' worth of segments, even if empty, still masks
+        assert_eq!(mask_jwt("a..c"), "***.***.***");
+    }
+
+    // mask_url_credentials tests
+
+    #[test]
+    fn test_mask_url_credentials_https_user_password() {
+        assert_eq!(
+            mask_url_credentials("https://user:secret@example.com/path"),
+            "https://***:***@example.com/path"
+        );
+    }
+
+    #[test]
+    fn test_mask_url_credentials_with_port() {
+        assert_eq!(
+            mask_url_credentials("https://admin:hunter2@example.com:8443/admin"),
+            "https://***:***@example.com:8443/admin"
+        );
+    }
+
+    #[test]
+    fn test_mask_url_credentials_user_only() {
+        assert_eq!(
+            mask_url_credentials("https://token@example.com/api"),
+            "https://***@example.com/api"
+        );
+    }
+
+    #[test]
+    fn test_mask_url_credentials_no_credentials() {
+        assert_eq!(
+            mask_url_credentials("https://example.com/path"),
+            "https://example.com/path"
+        );
+    }
+
+    #[test]
+    fn test_mask_url_credentials_no_scheme() {
+        assert_eq!(mask_url_credentials("user:pass@example.com"), "user:pass@example.com");
+    }
+
+    #[test]
+    fn test_mask_url_credentials_no_path() {
+        assert_eq!(
+            mask_url_credentials("ftp://u:p@host"),
+            "ftp://***:***@host"
+        );
+    }
+
+    // mask_partial_start tests
+
+    #[test]
+    fn test_mask_partial_start_basic() {
+        assert_eq!(mask_partial_start("sk_live_abcdef", 7), "sk_live*******");
+    }
+
+    #[test]
+    fn test_mask_partial_start_show_none() {
+        assert_eq!(mask_partial_start("secret", 0), "******");
+    }
+
+    #[test]
+    fn test_mask_partial_start_show_all() {
+        assert_eq!(mask_partial_start("abc", 3), "abc");
+    }
+
+    #[test]
+    fn test_mask_partial_start_show_more_than_length() {
+        assert_eq!(mask_partial_start("abc", 10), "abc");
+    }
+
+    #[test]
+    fn test_mask_partial_start_empty() {
+        assert_eq!(mask_partial_start("", 4), "");
     }
 }

@@ -4,13 +4,15 @@
 [![Crates.io](https://img.shields.io/crates/v/philiprehberger-mask.svg)](https://crates.io/crates/philiprehberger-mask)
 [![Last updated](https://img.shields.io/github/last-commit/philiprehberger/rs-mask)](https://github.com/philiprehberger/rs-mask/commits/main)
 
+![rs-mask](https://raw.githubusercontent.com/philiprehberger/rs-mask/main/package-card.webp)
+
 Data masking and redaction for strings, emails, and sensitive data
 
 ## Installation
 
 ```toml
 [dependencies]
-philiprehberger-mask = "0.2.2"
+philiprehberger-mask = "0.3.0"
 ```
 
 ## Usage
@@ -45,6 +47,27 @@ assert_eq!(mask_iban("GB29NWBK60161331926819"), "GB****************6819");
 let secret = MaskedString::from("api-key");
 ```
 
+### JWTs, URL credentials, and partial-start masking
+
+```rust
+use philiprehberger_mask::{mask_jwt, mask_url_credentials, mask_partial_start};
+
+// JWT — mask all three segments
+assert_eq!(
+    mask_jwt("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.SflKxwRJSMeKKF2QT4"),
+    "***.***.***"
+);
+
+// URL credentials — preserve scheme/host/path, redact basic auth
+assert_eq!(
+    mask_url_credentials("https://user:secret@db.example.com:5432/app"),
+    "https://***:***@db.example.com:5432/app"
+);
+
+// Keep a recognizable prefix, hide the rest
+assert_eq!(mask_partial_start("sk_live_abcdef", 7), "sk_live*******");
+```
+
 ## API
 
 | Function / Type | Description |
@@ -60,6 +83,9 @@ let secret = MaskedString::from("api-key");
 | `.reveal()` | Get the real value |
 | `mask_ssn(s)` | Mask SSN keeping last 4 digits |
 | `mask_iban(s)` | Mask IBAN keeping country code + last 4 |
+| `mask_jwt(s)` | Mask all three segments of a JWT token |
+| `mask_url_credentials(s)` | Redact basic-auth credentials in a URL |
+| `mask_partial_start(s, show_first)` | Keep first N characters, mask the rest |
 | `MaskedString::default()` | Create empty masked string |
 | `MaskedString::from(s)` | Create from &str or String |
 

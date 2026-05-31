@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 (2026-05-30)
+
+- Add `mask_jwt` for redacting JWT tokens (`header.payload.signature` → `***.***.***`)
+- Add `mask_url_credentials` for redacting basic-auth credentials in URLs
+- Add `mask_partial_start` to keep the first N characters and mask the rest
+- Add `package-card.webp` reference to README
+- Sync README install snippet version with Cargo.toml
+
 ## 0.2.3 (2026-03-31)
 
 - Standardize README to 3-badge format with emoji Support section
