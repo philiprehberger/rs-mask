@@ -414,7 +414,7 @@ pub fn mask_url_credentials(s: &str) -> String {
     let after_scheme = scheme_end + 3;
     // Authority section ends at the first '/', '?', or '#' — or end of string
     let auth_end_rel = s[after_scheme..]
-        .find(|c: char| c == '/' || c == '?' || c == '#')
+        .find(['/', '?', '#'])
         .unwrap_or(s.len() - after_scheme);
     let authority = &s[after_scheme..after_scheme + auth_end_rel];
     let Some(at_rel) = authority.rfind('@') else {
